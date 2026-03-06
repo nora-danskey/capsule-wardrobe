@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
-export const runtime = "edge";
 
 const VIBE_OPTIONS = [
   "minimalist", "classic", "bohemian", "edgy",
