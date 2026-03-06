@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ["sharp"],
-  },
+  basePath: "/wardrobe",
 };
 
 export default nextConfig;

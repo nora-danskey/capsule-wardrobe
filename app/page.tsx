@@ -197,20 +197,41 @@ const TIPS: Record<string, string> = {
   default: "Build intentionally — buy less, choose better. Start with pieces you'll reach for constantly, then add interest once your foundation is solid.",
 };
 
-async function analyzePhotos(photos: { id: string; file: File; url: string }[]) {
-  const images = await Promise.all(
-    photos.map(async (photo) => {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(",")[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(photo.file);
-      });
-      return { base64, mediaType: photo.file.type };
-    })
-  );
+function compressImage(file: File): Promise<{ base64: string; mediaType: string }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 1500;
+      let { width, height } = img;
+      if (width > MAX || height > MAX) {
+        if (width >= height) {
+          height = Math.round((height * MAX) / width);
+          width = MAX;
+        } else {
+          width = Math.round((width * MAX) / height);
+          height = MAX;
+        }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("Could not get canvas context")); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+      resolve({ base64: dataUrl.split(",")[1], mediaType: "image/jpeg" });
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
 
-  const response = await fetch("/api/analyze", {
+async function analyzePhotos(photos: { id: string; file: File; url: string }[]) {
+  const images = await Promise.all(photos.map((photo) => compressImage(photo.file)));
+
+  const response = await fetch("/wardrobe/api/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ images }),

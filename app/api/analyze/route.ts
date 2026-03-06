@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import sharp from "sharp";
 
-export const runtime = "nodejs";
+export const runtime = "edge";
 
 const VIBE_OPTIONS = [
   "minimalist", "classic", "bohemian", "edgy",
@@ -49,41 +48,16 @@ async function handlePost(request: NextRequest) {
     return NextResponse.json({ error: "No images provided" }, { status: 400 });
   }
 
-  // Compress images with sharp — max 1500px, JPEG quality 80
-  const MAX_BYTES = 4 * 1024 * 1024; // 4 MB
-  let compressed: { base64: string; mediaType: string }[];
-  try {
-    compressed = await Promise.all(
-      images.map(async (img, i) => {
-        const inputBuffer = Buffer.from(img.base64, "base64");
-        const outputBuffer = await sharp(inputBuffer)
-          .resize({ width: 1500, height: 1500, fit: "inside", withoutEnlargement: true })
-          .jpeg({ quality: 80 })
-          .toBuffer();
-        const byteSize = outputBuffer.byteLength;
-        console.log(`[analyze] image ${i + 1}: ${(inputBuffer.byteLength / 1024).toFixed(0)}KB → ${(byteSize / 1024).toFixed(0)}KB`);
-        if (byteSize > MAX_BYTES) {
-          throw new Error(`Image ${i + 1} is ${(byteSize / 1024 / 1024).toFixed(1)}MB after compression, which exceeds the 4MB limit. Please use a smaller image.`);
-        }
-        return { base64: outputBuffer.toString("base64"), mediaType: "image/jpeg" };
-      })
-    );
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[analyze] image compression error:", err);
-    return NextResponse.json({ error: message }, { status: 400 });
-  }
-
   // Call Anthropic
   let rawText: string;
   try {
     const client = new Anthropic({ apiKey });
 
-    const imageContent = compressed.map((img) => ({
+    const imageContent = images.map((img) => ({
       type: "image" as const,
       source: {
         type: "base64" as const,
-        media_type: img.mediaType as "image/jpeg",
+        media_type: img.mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
         data: img.base64,
       },
     }));
