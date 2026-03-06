@@ -19,6 +19,33 @@ const RETAILERS: Record<string, string[]> = {
   default: ["Zara", "ASOS", "Mango", "Uniqlo", "& Other Stories"],
 };
 
+const NATURAL_FIBER_BRANDS = ["Quince", "Everlane", "Eileen Fisher", "Pact", "Thought Clothing", "Patagonia"];
+
+const ETHICAL_BRANDS_LIST = [
+  "Quince", "Pact", "Thought Clothing", "Eileen Fisher", "Reformation",
+  "Tradlands", "Taylor Stitch", "Amour Vert", "Able", "Kotn",
+  "Everlane", "Christy Dawn", "Hackwith Design House",
+];
+
+function getFiberNote(item: string): string {
+  const s = item.toLowerCase();
+  if (s.includes("cashmere")) return "cashmere";
+  if (s.includes("silk")) return "silk";
+  if (s.includes("linen")) return "linen";
+  if (s.includes("merino") || s.includes("wool") || s.includes("turtleneck") || s.includes("fine-knit") || s.includes("sweater") || s.includes("cardigan") || s.includes("pullover")) return "wool or cashmere";
+  if (s.includes("blouse") || s.includes("cami") || s.includes("shell")) return "silk or cotton";
+  if (s.includes("denim") || s.includes("jean")) return "cotton denim";
+  if (s.includes("hoodie") || s.includes("shirt") || s.includes("oxford") || s.includes("button-down") || s.includes("tee") || s.includes("tank") || s.includes("polo") || s.includes("henley")) return "cotton";
+  if (s.includes("trouser") || s.includes("pant") || s.includes("slack") || s.includes("chino")) return "wool or cotton";
+  if (s.includes("skirt")) return "cotton, linen, or silk";
+  if (s.includes("dress")) return "cotton, linen, or silk";
+  if (s.includes("trench") || s.includes("coat")) return "wool or cotton";
+  if (s.includes("blazer") || s.includes("jacket") || s.includes("kimono")) return "wool, linen, or cotton";
+  if (s.includes("boot") || s.includes("loafer") || s.includes("pump") || s.includes("flat") || s.includes("mule") || s.includes("sandal") || s.includes("sneaker")) return "leather or canvas";
+  if (s.includes("bag") || s.includes("tote") || s.includes("clutch") || s.includes("crossbody") || s.includes("satchel") || s.includes("backpack")) return "leather or cotton canvas";
+  return "natural fibers";
+}
+
 const CAPSULE_ITEMS: Record<string, { category: string; items: string[] }[]> = {
   minimalist: [
     { category: "Tops", items: ["White structured button-down", "Black fine-knit turtleneck", "Cream ribbed tank (×2)", "Oatmeal linen tee"] },
@@ -128,6 +155,17 @@ function buildShopUrl(retailer: string, item: string): string {
     "ThredUp": `https://www.thredup.com/search?search_text=${q}`,
     "Poshmark": `https://poshmark.com/search?query=${q}`,
     "BHLDN": `https://www.bhldn.com/search?q=${q}`,
+    "Eileen Fisher": `https://www.eileenfisher.com/search?q=${q}`,
+    "Pact": `https://wearpact.com/search?q=${q}`,
+    "Thought Clothing": `https://www.wearethought.com/search?q=${q}`,
+    "Tradlands": `https://tradlands.com/search?q=${q}`,
+    "Taylor Stitch": `https://www.taylorstitch.com/search?q=${q}`,
+    "Amour Vert": `https://amourvert.com/search?q=${q}`,
+    "Able": `https://www.livefashionable.com/search?q=${q}`,
+    "Kotn": `https://kotn.com/search?q=${q}`,
+    "Christy Dawn": `https://christydawn.com/search?q=${q}`,
+    "Hackwith Design House": `https://hackwithdesignhouse.com/search?q=${q}`,
+    "Patagonia": `https://www.patagonia.com/search/?q=${q}`,
   };
   return map[retailer] || `https://www.google.com/search?q=${encodeURIComponent(retailer + " " + item)}`;
 }
@@ -187,109 +225,6 @@ const VIBE_LABEL: Record<string, string> = {
   business: "Business Chic", eclectic: "Eclectic Mix", default: "Curated",
 };
 
-const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Josefin+Sans:wght@200;300;400&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0}
-  .app{min-height:100vh;background:#FAF7F2;font-family:'Josefin Sans',sans-serif;color:#2C2420;overflow-x:hidden}
-  .header{padding:40px 40px 28px;text-align:center;border-bottom:1px solid rgba(44,36,32,.1)}
-  .eyebrow{font-size:9px;letter-spacing:5px;text-transform:uppercase;color:#9B7E6E;font-weight:300;margin-bottom:10px}
-  .logo{font-family:'Cormorant Garamond',serif;font-size:44px;font-weight:300;color:#2C2420;line-height:1.1}
-  .logo em{font-style:italic;color:#9B7E6E}
-  .main{max-width:760px;margin:0 auto;padding:44px 32px}
-  .step-title{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:300;margin-bottom:6px}
-  .step-sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#9B7E6E;font-weight:300;margin-bottom:32px}
-  .progress{display:flex;align-items:center;justify-content:center;padding:20px 40px}
-  .pdot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;border:1px solid rgba(44,36,32,.2);color:rgba(44,36,32,.3);transition:all .3s;flex-shrink:0}
-  .pdot.active{background:#2C2420;color:#FAF7F2;border-color:#2C2420}
-  .pdot.done{background:#9B7E6E;color:#FAF7F2;border-color:#9B7E6E}
-  .pline{width:50px;height:1px;background:rgba(44,36,32,.15);margin:0 6px;flex-shrink:0}
-  .pline.done{background:#9B7E6E}
-  .upload-zone{border:1.5px dashed rgba(44,36,32,.2);padding:40px 24px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.4)}
-  .upload-zone:hover{border-color:#9B7E6E;background:rgba(155,126,110,.05)}
-  .upload-icon{font-size:32px;margin-bottom:12px;opacity:.4}
-  .upload-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;margin-bottom:6px}
-  .upload-hint{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#9B7E6E;font-weight:300}
-  .photo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px}
-  .photo-thumb{position:relative;aspect-ratio:1;overflow:hidden}
-  .photo-thumb img{width:100%;height:100%;object-fit:cover}
-  .photo-remove{position:absolute;top:4px;right:4px;width:20px;height:20px;background:rgba(44,36,32,.8);color:#FAF7F2;border:none;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
-  .analyzing{text-align:center;padding:28px;border:1px solid rgba(44,36,32,.1);background:rgba(255,255,255,.5);margin-top:14px}
-  .analyze-spinner{width:30px;height:30px;border:1px solid rgba(44,36,32,.15);border-top-color:#9B7E6E;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 14px}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .analyze-text{font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;font-weight:300}
-  .ai-result{padding:18px 20px;background:rgba(155,126,110,.08);border-left:2px solid #9B7E6E;margin-top:14px}
-  .ai-result-label{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#9B7E6E;margin-bottom:10px;font-weight:300}
-  .ai-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-  .ai-chip{padding:4px 12px;background:rgba(44,36,32,.08);font-size:9px;letter-spacing:2px;text-transform:uppercase}
-  .ai-palette{display:flex;gap:4px;margin-top:10px}
-  .ai-swatch{width:22px;height:22px;border-radius:2px}
-  .field{margin-bottom:22px}
-  label{display:block;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#9B7E6E;margin-bottom:8px;font-weight:300}
-  input,textarea,select{width:100%;padding:11px 14px;border:1px solid rgba(44,36,32,.15);background:rgba(255,255,255,.7);font-family:'Josefin Sans',sans-serif;font-size:13px;color:#2C2420;outline:none;transition:border-color .2s}
-  input:focus,textarea:focus,select:focus{border-color:#9B7E6E}
-  textarea{resize:vertical;min-height:72px}
-  .meas-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-  .tag-group{display:flex;flex-wrap:wrap;gap:7px}
-  .tag{padding:7px 14px;border:1px solid rgba(44,36,32,.2);font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s;font-weight:300;background:transparent}
-  .tag.sel{background:#2C2420;color:#FAF7F2;border-color:#2C2420}
-  .bwrap{position:relative}
-  .bsym{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:'Cormorant Garamond',serif;font-size:22px;color:#9B7E6E}
-  .binput{padding-left:30px!important;font-size:22px!important;font-family:'Cormorant Garamond',serif!important;font-weight:300}
-  .radio-row{display:flex;gap:10px}
-  .ropt{flex:1;padding:11px;border:1px solid rgba(44,36,32,.15);text-align:center;cursor:pointer;font-size:9px;letter-spacing:2px;text-transform:uppercase;transition:all .2s}
-  .ropt.sel{background:#2C2420;color:#FAF7F2;border-color:#2C2420}
-  .toggle-row{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid rgba(44,36,32,.1);cursor:pointer}
-  .tog{width:38px;height:20px;border-radius:10px;border:1px solid rgba(44,36,32,.2);position:relative;transition:all .2s;flex-shrink:0}
-  .tog.on{background:#2C2420;border-color:#2C2420}
-  .tog::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:white;top:2px;left:2px;transition:all .2s}
-  .tog.on::after{transform:translateX(18px)}
-  .tog-label{font-size:9px;letter-spacing:2px;text-transform:uppercase}
-  .tog-sub{font-size:9px;color:rgba(44,36,32,.45);margin-top:2px;font-style:italic}
-  .btn{display:block;width:100%;padding:17px;background:#2C2420;color:#FAF7F2;font-family:'Josefin Sans',sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;border:none;cursor:pointer;margin-top:36px;transition:all .2s;font-weight:300}
-  .btn:hover{background:#9B7E6E}
-  .btn:disabled{background:rgba(44,36,32,.18);cursor:not-allowed}
-  .btn-ghost{display:block;width:100%;padding:14px;background:transparent;color:#2C2420;font-family:'Josefin Sans',sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;border:1px solid rgba(44,36,32,.2);cursor:pointer;transition:all .2s;font-weight:300}
-  .btn-row{display:flex;gap:10px;margin-top:36px}
-  .btn-row .btn,.btn-row .btn-ghost{margin-top:0;flex:1}
-  .loading{text-align:center;padding:80px 0}
-  .load-spinner{width:40px;height:40px;border:1px solid rgba(44,36,32,.15);border-top-color:#9B7E6E;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px}
-  .load-text{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;font-style:italic}
-  .load-sub{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#9B7E6E;margin-top:6px;font-weight:300}
-  .result-hero{text-align:center;padding:36px;background:#2C2420;color:#FAF7F2;margin-bottom:40px}
-  .rh-eye{font-size:9px;letter-spacing:4px;color:#9B7E6E;margin-bottom:10px}
-  .rh-title{font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:300}
-  .rh-title em{font-style:italic;color:#C8A882}
-  .palette-strip{display:flex;height:5px;margin-top:20px}
-  .pbar{flex:1}
-  .sec-label{font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#9B7E6E;margin-bottom:20px;font-weight:300}
-  .budget-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:40px}
-  .bcard{padding:18px;border:1px solid rgba(44,36,32,.1);background:rgba(255,255,255,.5)}
-  .bc-cat{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#9B7E6E;margin-bottom:6px;font-weight:300}
-  .bc-amt{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300}
-  .bc-per{font-size:9px;color:rgba(44,36,32,.4);margin-top:3px}
-  .divider{height:1px;background:rgba(44,36,32,.08);margin:36px 0}
-  .cat-block{margin-bottom:40px}
-  .cat-head{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid rgba(44,36,32,.08)}
-  .cat-name{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400}
-  .cat-bud{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#9B7E6E;margin-left:auto;font-weight:300}
-  .item-list{display:grid;gap:10px}
-  .item-row{display:flex;align-items:flex-start;padding:14px;border:1px solid rgba(44,36,32,.07);background:rgba(255,255,255,.55);gap:14px;flex-wrap:wrap}
-  .item-name{font-size:12px;flex:1;padding-top:3px;min-width:140px}
-  .shop-links{display:flex;flex-wrap:wrap;gap:5px}
-  .slink{font-size:8px;letter-spacing:2px;text-transform:uppercase;padding:5px 9px;border:1px solid rgba(44,36,32,.18);color:#2C2420;text-decoration:none;font-weight:300;transition:all .15s;white-space:nowrap}
-  .slink:hover{background:#2C2420;color:#FAF7F2;border-color:#2C2420}
-  .tip-box{padding:22px;background:rgba(155,126,110,.08);border-left:2px solid #9B7E6E;margin-top:36px}
-  .tip-t{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#9B7E6E;margin-bottom:8px}
-  .tip-txt{font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;line-height:1.65}
-  .ai-insight{padding:16px 20px;background:rgba(44,36,32,.04);border:1px solid rgba(44,36,32,.08);margin-bottom:32px}
-  .ai-insight-label{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#9B7E6E;margin-bottom:6px}
-  .ai-insight-text{font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic;line-height:1.6}
-  @media(max-width:580px){
-    .logo{font-size:30px}.meas-grid,.budget-grid{grid-template-columns:1fr}
-    .main{padding:32px 18px}.photo-grid{grid-template-columns:repeat(3,1fr)}
-    .radio-row{flex-direction:column}
-  }
-`;
 
 type Photo = { id: string; file: File; url: string };
 type Meas = { height: string; bust: string; waist: string; hips: string; inseam: string };
@@ -301,6 +236,7 @@ type Result = {
   vibe: string;
   palette: string[];
   aiAnalysis: AiAnalysis;
+  naturalFibers: boolean;
 } | null;
 
 export default function CapsuleWardrobe() {
@@ -320,6 +256,8 @@ export default function CapsuleWardrobe() {
   const [budget, setBudget] = useState("");
   const [flex, setFlex] = useState("strict");
   const [secondhand, setSecondhand] = useState(false);
+  const [naturalFibers, setNaturalFibers] = useState(false);
+  const [ethicalBrands, setEthicalBrands] = useState(false);
   const [occasions, setOccasions] = useState<string[]>([]);
 
   const addPhotos = useCallback(async (files: FileList | null) => {
@@ -357,14 +295,26 @@ export default function CapsuleWardrobe() {
     await new Promise(r => setTimeout(r, 1600));
     const vibe = aiAnalysis?.vibe || "default";
     const items = CAPSULE_ITEMS[vibe] || CAPSULE_ITEMS.default;
-    const retailers = secondhand
-      ? [...(RETAILERS[vibe] || RETAILERS.default), "Depop", "ThredUp", "Poshmark"]
-      : (RETAILERS[vibe] || RETAILERS.default);
+    let retailers: string[];
+    if (ethicalBrands && naturalFibers) {
+      const both = ETHICAL_BRANDS_LIST.filter(b => NATURAL_FIBER_BRANDS.includes(b));
+      const ethicalOnly = ETHICAL_BRANDS_LIST.filter(b => !NATURAL_FIBER_BRANDS.includes(b));
+      retailers = [...both, ...ethicalOnly];
+    } else if (ethicalBrands) {
+      retailers = [...ETHICAL_BRANDS_LIST];
+    } else if (naturalFibers) {
+      const vibeRetailers = RETAILERS[vibe] || RETAILERS.default;
+      const remaining = vibeRetailers.filter(r => !NATURAL_FIBER_BRANDS.includes(r));
+      retailers = [...NATURAL_FIBER_BRANDS, ...remaining];
+    } else {
+      retailers = RETAILERS[vibe] || RETAILERS.default;
+    }
+    if (secondhand) retailers = [...retailers, "Depop", "ThredUp", "Poshmark"];
     const budgetBreakdown = estimateBudget(parseInt(budget));
     const palette = aiAnalysis?.colorPalette?.length === 4
       ? aiAnalysis.colorPalette
       : ["#F5F0E8", "#C8B8A2", "#7D6B5E", "#2C2420"];
-    setResult({ items, retailers, budgetBreakdown, vibe, palette, aiAnalysis });
+    setResult({ items, retailers, budgetBreakdown, vibe, palette, aiAnalysis, naturalFibers });
     setLoading(false);
     setStep(3);
   };
@@ -373,12 +323,11 @@ export default function CapsuleWardrobe() {
     setStep(0); setResult(null); setPhotos([]); setAiAnalysis(null); setAiError(false);
     setPinterestUrl(""); setStyleDesc(""); setSize("");
     setMeas({ height: "", bust: "", waist: "", hips: "", inseam: "" });
-    setBudget(""); setFlex("strict"); setSecondhand(false); setOccasions([]);
+    setBudget(""); setFlex("strict"); setSecondhand(false); setNaturalFibers(false); setEthicalBrands(false); setOccasions([]);
   };
 
   return (
     <>
-      <style>{CSS}</style>
       <div className="app">
         <div className="header">
           <div className="eyebrow">AI-Powered Styling</div>
@@ -405,26 +354,28 @@ export default function CapsuleWardrobe() {
               <div className="step-title">Upload Your Style</div>
               <div className="step-sub">Share photos of your outfits or wardrobe</div>
 
-              <div
+              <label
+                htmlFor="photo-upload"
                 className="upload-zone"
-                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={(e) => { e.preventDefault(); setDragging(false); addPhotos(e.dataTransfer.files); }}
-                onClick={() => fileInputRef.current?.click()}
+                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragging(true); }}
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragging(true); }}
+                onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragging(false); }}
+                onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragging(false); addPhotos(e.dataTransfer.files); }}
                 style={dragging ? { borderColor: "#9B7E6E", background: "rgba(155,126,110,.1)" } : undefined}
               >
                 <div className="upload-icon">↑</div>
                 <div className="upload-title">Drop photos here</div>
                 <div className="upload-hint">Up to 8 images · JPG, PNG, WEBP</div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={(e) => addPhotos(e.target.files)}
-                />
-              </div>
+              </label>
+              <input
+                id="photo-upload"
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*"
+                className="sr-only"
+                onChange={(e) => addPhotos(e.target.files)}
+              />
 
               {photos.length > 0 && (
                 <div className="photo-grid">
@@ -573,6 +524,26 @@ export default function CapsuleWardrobe() {
                 </div>
               </div>
 
+              <div className="field">
+                <div className="toggle-row" onClick={() => setNaturalFibers(!naturalFibers)}>
+                  <div className={`tog${naturalFibers ? " on" : ""}`} />
+                  <div>
+                    <div className="tog-label">Natural fibers only</div>
+                    <div className="tog-sub">Cotton, linen, wool, silk, cashmere — no synthetics</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="field">
+                <div className="toggle-row" onClick={() => setEthicalBrands(!ethicalBrands)}>
+                  <div className={`tog${ethicalBrands ? " on" : ""}`} />
+                  <div>
+                    <div className="tog-label">Small or ethical brands only</div>
+                    <div className="tog-sub">B-corps, independent designers, sustainability-certified</div>
+                  </div>
+                </div>
+              </div>
+
               <div className="btn-row">
                 <button className="btn-ghost" onClick={() => setStep(1)}>Back</button>
                 <button className="btn" disabled={!canProceed()} onClick={generate}>Build My Capsule</button>
@@ -631,7 +602,12 @@ export default function CapsuleWardrobe() {
                     <div className="item-list">
                       {cat.items.map((item, ii) => (
                         <div className="item-row" key={ii}>
-                          <div className="item-name">{item}</div>
+                          <div className="item-name">
+                            {item}
+                            {result.naturalFibers && (
+                              <div className="fiber-note">look for: {getFiberNote(item)}</div>
+                            )}
+                          </div>
                           <div className="shop-links">
                             {result.retailers.map(r => (
                               <a key={r} className="slink" href={buildShopUrl(r, item)} target="_blank" rel="noopener noreferrer">{r}</a>

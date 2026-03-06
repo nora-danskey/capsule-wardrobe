@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import sharp from "sharp";
 
-const client = new Anthropic();
+export const runtime = "nodejs";
 
 const VIBE_OPTIONS = [
   "minimalist", "classic", "bohemian", "edgy",
@@ -15,17 +16,74 @@ const OCCASION_OPTIONS = [
 
 export async function POST(request: NextRequest) {
   try {
-    const { images } = await request.json();
+    return await handlePost(request);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error("[analyze] unhandled error:", message);
+    console.error("[analyze] stack:", stack);
+    return NextResponse.json({ error: message, stack }, { status: 500 });
+  }
+}
 
-    if (!images || !Array.isArray(images) || images.length === 0) {
-      return NextResponse.json({ error: "No images provided" }, { status: 400 });
-    }
+async function handlePost(request: NextRequest) {
+  // Check API key before doing anything else
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    console.error("[analyze] ANTHROPIC_API_KEY is not set");
+    return NextResponse.json({ error: "ANTHROPIC_API_KEY is not set" }, { status: 500 });
+  }
 
-    const imageContent = images.map((img: { base64: string; mediaType: string }) => ({
+  // Parse request body
+  let images: { base64: string; mediaType: string }[];
+  try {
+    const body = await request.json();
+    images = body.images;
+    console.log(`[analyze] received ${images?.length ?? 0} image(s)`);
+  } catch (err) {
+    console.error("[analyze] failed to parse request body:", err);
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  if (!images || !Array.isArray(images) || images.length === 0) {
+    return NextResponse.json({ error: "No images provided" }, { status: 400 });
+  }
+
+  // Compress images with sharp — max 1500px, JPEG quality 80
+  const MAX_BYTES = 4 * 1024 * 1024; // 4 MB
+  let compressed: { base64: string; mediaType: string }[];
+  try {
+    compressed = await Promise.all(
+      images.map(async (img, i) => {
+        const inputBuffer = Buffer.from(img.base64, "base64");
+        const outputBuffer = await sharp(inputBuffer)
+          .resize({ width: 1500, height: 1500, fit: "inside", withoutEnlargement: true })
+          .jpeg({ quality: 80 })
+          .toBuffer();
+        const byteSize = outputBuffer.byteLength;
+        console.log(`[analyze] image ${i + 1}: ${(inputBuffer.byteLength / 1024).toFixed(0)}KB → ${(byteSize / 1024).toFixed(0)}KB`);
+        if (byteSize > MAX_BYTES) {
+          throw new Error(`Image ${i + 1} is ${(byteSize / 1024 / 1024).toFixed(1)}MB after compression, which exceeds the 4MB limit. Please use a smaller image.`);
+        }
+        return { base64: outputBuffer.toString("base64"), mediaType: "image/jpeg" };
+      })
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[analyze] image compression error:", err);
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
+  // Call Anthropic
+  let rawText: string;
+  try {
+    const client = new Anthropic({ apiKey });
+
+    const imageContent = compressed.map((img) => ({
       type: "image" as const,
       source: {
         type: "base64" as const,
-        media_type: img.mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+        media_type: img.mediaType as "image/jpeg",
         data: img.base64,
       },
     }));
@@ -55,12 +113,23 @@ Return ONLY the raw JSON object — no markdown, no code fences, no explanation.
       ],
     });
 
-    const text = response.content[0].type === "text" ? response.content[0].text : "";
-    const analysis = JSON.parse(text);
+    rawText = response.content[0].type === "text" ? response.content[0].text : "";
+    console.log("[analyze] Anthropic response:", rawText.slice(0, 200));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[analyze] Anthropic API error:", err);
+    return NextResponse.json({ error: `Anthropic API error: ${message}` }, { status: 500 });
+  }
 
+  // Parse JSON response
+  try {
+    const analysis = JSON.parse(rawText);
     return NextResponse.json(analysis);
-  } catch (error) {
-    console.error("Analysis error:", error);
-    return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
+  } catch (err) {
+    console.error("[analyze] JSON parse error. Raw text was:", rawText);
+    return NextResponse.json(
+      { error: `Model returned non-JSON response: ${rawText.slice(0, 300)}` },
+      { status: 500 },
+    );
   }
 }
